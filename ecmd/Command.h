@@ -51,8 +51,12 @@ struct Command {
 class CommandHandler {
 public:
 	CommandHandler(const std::vector<Command> &commands);
+	
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+	void string_to_args(const std::string &input);
+#endif
 
-	void process_command(const std::string &input, bool clear_args = true);
+	void process_command(bool clear_args = true);
 
 	std::vector<Command> commands;
 

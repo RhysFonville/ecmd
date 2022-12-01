@@ -1,10 +1,11 @@
 #pragma once
 
 #include <fstream>
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <Windows.h>
 #include <filesystem>
+#endif
 #include <vector>
-#include <filesystem>
 #include <string>
 #include <codecvt>
 #include <locale>
@@ -12,13 +13,15 @@
 
 #define PATH_DOES_NOT_EXIST "The specified path does not exist.", "Try checking for any typos."
 
-namespace fs = std::filesystem;
-
 static constexpr char DEFAULT_TEXT_COLOR = 15;
 static constexpr char ERROR_TEXT_COLOR = 12;
 static constexpr char ERROR_SUGGESTION_TEXT_COLOR = 4;
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+namespace fs = std::filesystem;
+
 static HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
 
 static std::string user_folder_path;
 
@@ -49,62 +52,6 @@ static void error(const std::string &str, const std::string &suggestion = "") {
 
 	throw T(message);
 }
-
-struct FileStream {
-	std::ifstream in;
-	std::ofstream out;
-
-	std::string path;
-
-	std::vector<std::string> content;
-
-	FileStream(std::string file, bool create_file_if_doesnt_exist = true) {
-		path = fs::current_path().string() + "\\" + file;
-
-		in.open(path, std::ios::app);
-		out.open(path, std::ios::app);
-		if (in && out) {
-			std::string temp;
-			while (std::getline(in, temp)) {
-				content.push_back(temp);
-			}
-		} else {
-			if (create_file_if_doesnt_exist) {
-				out.open(path, std::ios::trunc);
-				return;
-			} else {
-				error("File could not be opened properly.", "Try checking if the file exists");
-			}
-		}
-	}
-
-	void close() {
-		in.close();
-		out.close();
-		content.clear();
-
-		if (in.is_open())
-			error("File could not close.");
-		if (out.is_open())
-			error("File could not close.");
-	}
-
-	void clear() {
-		std::ofstream ofs;
-		ofs.open(path, std::ofstream::out | std::ofstream::trunc);
-		ofs.close();
-
-		if (ofs.is_open()) {
-			error("Failed to clear file.");
-		}
-	}
-
-	void set_to_vector() {
-		clear();
-		for (const std::string &str : content)
-			out << str << "\n";
-	}
-};
 
 template <typename T>
 static void insert_block(std::vector<T> &target, const std::vector<T> &vec, int index = 0) {
@@ -148,6 +95,7 @@ static std::string wstring_to_string(const std::wstring &wstr) {
 	return std::string(wstr.begin(), wstr.end());
 }
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 static std::string file_type_to_string(const fs::file_type &type) {
 	switch (type) {
 		case fs::file_type::none:
@@ -208,6 +156,7 @@ namespace std {
 		}
 	}
 }
+#endif
 
 static std::string words_to_string(const std::vector<std::string> &words) noexcept {
 	std::string ret;

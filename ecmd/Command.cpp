@@ -6,7 +6,8 @@ void CommandHandler::sort_arguments() {
 	// I have no idea how to do this
 }
 
-void CommandHandler::process_command(const std::string &input, bool clear_args) {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+void CommandHandler::string_to_args(const std::string &input) {
 	LPWSTR *args = CommandLineToArgvW(string_to_wstring(input).c_str(), &argc);
 
 	argc++;
@@ -14,7 +15,10 @@ void CommandHandler::process_command(const std::string &input, bool clear_args) 
 	for (int i = 0; i < argc-1; i++) {
 		argv.push_back(wstring_to_string(args[i]));
 	}
+}
+#endif
 
+void CommandHandler::process_command(bool clear_args) {
 	if (argv.size() > 1) {
 		bool found_command = false;
 		for (Command command : commands) {
