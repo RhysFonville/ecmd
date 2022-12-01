@@ -1,0 +1,76 @@
+#include "Command.h"
+
+CommandHandler::CommandHandler(const std::vector<Command> &commands) : commands(commands), argc(0), argv(std::vector<std::string>()) { }
+
+void CommandHandler::sort_arguments() {
+	// I have no idea how to do this
+}
+
+void CommandHandler::process_command(const std::string &input, bool clear_args) {
+	LPWSTR *args = CommandLineToArgvW(string_to_wstring(input).c_str(), &argc);
+
+	argc++;
+	argv.push_back(std::filesystem::current_path().string());
+	for (int i = 0; i < argc-1; i++) {
+		argv.push_back(wstring_to_string(args[i]));
+	}
+
+	if (argv.size() > 1) {
+		bool found_command = false;
+		for (Command command : commands) {
+			if (command.name == argv[1]) {
+				found_command = true;
+
+				size_t number_of_mandatory_args = 0;
+				for (const Argument &arg : command.arguments) {
+					if (arg.mandatory) number_of_mandatory_args++;
+				}
+				size_t first_optional_arg_index = 0;
+				for (std::vector<std::string>::iterator it = argv.begin(); it == argv.end(); it++) {
+					if ((*it)[0] == '-') {
+						first_optional_arg_index = std::distance(argv.begin(), it);
+						break;
+					}
+				}
+				if (first_optional_arg_index == number_of_mandatory_args) {
+					try {
+						command.function();
+						std::cout << output;
+						output.out.clear();
+					} catch (std::exception &e) {
+						error_from_string(e.what());
+						std::cerr << "Command aborted.\n\n";
+					}
+				} else {
+					error<std::invalid_argument>("A mandatory argument was not specified.", "Mandatory arguments to not need a dashed dashed modifier (ex: -x) and need to be specified at the beginning of the arguments.");
+				}
+				break;
+			}
+		}
+		if (!found_command)
+			error_from_string("Command does not exist.");
+	}
+
+	if (clear_args) {
+		argv.clear();
+		argc = 0;
+	}
+}
+
+void CommandHandler::error_from_string(const std::string &str) {
+	std::vector<std::string> message = split(str, "====SUGGESTIONS====");
+
+	SetConsoleTextAttribute(console, ERROR_TEXT_COLOR);
+
+	std::cerr << message[0];
+
+	SetConsoleTextAttribute(console, ERROR_SUGGESTION_TEXT_COLOR);
+
+	for (int i = 1; i < message.size(); i++) {
+		std::cerr << message[i];
+	}
+
+	SetConsoleTextAttribute(console, DEFAULT_TEXT_COLOR);
+
+	std::cout << std::endl;
+}
