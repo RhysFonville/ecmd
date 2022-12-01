@@ -3,13 +3,6 @@
 
 #define INFO_BUFFER_SIZE 16
 
-/*
-* "ecmd" stands for "Epic Command". As in, "My Epic Command Prompt"
-* Began as a linux like command prompt, it is now an API to make creating commands easy.
-* 
-* Made September 18, 2022, at 2:07 PM
-*/
-
 int main(int argc, char *argv[]) {
 	TCHAR computer_name[INFO_BUFFER_SIZE+1] = {};
 	TCHAR user_name[INFO_BUFFER_SIZE+1] = {};

@@ -10,6 +10,13 @@
 #define FIRST_ARG 2
 #define ARG(index) (FIRST_ARG+index) 
 
+/*
+* "ecmd" stands for "Epic Command". As in, "My Epic Command Prompt"
+* Began as a linux like command prompt, it is now an API to make creating commands easy.
+* 
+* Made September 18, 2022, at 2:07 PM
+*/
+
 class CommandOutput {
 public:
 	friend std::ostream & operator<<(std::ostream &os, const CommandOutput &output);

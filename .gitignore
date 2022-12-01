@@ -1,1 +1,6 @@
-".vs/" 
+.vs/
+x64/Debug/
+ecmd/x64/Debug/*
+ecmd/x64/Release/*
+x64/Release/ecmd.pdb
+x64/Release/ecmd.exe
