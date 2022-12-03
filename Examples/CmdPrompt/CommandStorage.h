@@ -196,25 +196,7 @@ static void man() {
 	} else {
 		for (Command command : command_handler.commands) {
 			if (command.name == command_handler.argv[arg+1]) {
-				command_handler.output.out += command.help_message + "\n\n";
-
-				command_handler.output.out += to_upper(command.name);
-
-				for (Argument argument : command.arguments) {
-					command_handler.output.out += (argument.mandatory ? " {" : " [");
-					command_handler.output.out += argument.name;
-					command_handler.output.out += (argument.mandatory ? "}" : "]");
-
-					if (argument.repeating) {
-						command_handler.output.out += "...";
-					}
-				}
-				command_handler.output.out += "\n\n";
-				for (Argument argument : command.arguments) {
-					command_handler.output.out += argument.name + ": " + argument.description + '\n';
-				}
-
-				command_handler.output.out += '\n';
+				help_prompt(command);
 
 				return;
 			}
@@ -240,8 +222,8 @@ static void colortest() {
 }
 
 static void cd() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		fs::current_path(command_handler.argv[CommandHandler::FIRST_ARG]);
+	if (fs::exists(command_handler.argv[FIRST_ARG])) {
+		fs::current_path(command_handler.argv[FIRST_ARG]);
 	} else {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
@@ -296,11 +278,11 @@ static void ls() {
 }
 
 static void exists() {
-	command_handler.output.out += std::string(fs::exists(command_handler.argv[CommandHandler::FIRST_ARG]) ? "true" : "false") + '\n';
+	command_handler.output.out += std::string(fs::exists(command_handler.argv[FIRST_ARG]) ? "true" : "false") + '\n';
 }
 
 static void touch() {
-	std::ofstream file(command_handler.argv[CommandHandler::FIRST_ARG]);
+	std::ofstream file(command_handler.argv[FIRST_ARG]);
 	if (file.is_open()) {
 		file << "";
 		file.close();
@@ -310,11 +292,11 @@ static void touch() {
 }
 
 static void date() {
-	command_handler.output.out = std::format("{}", fs::last_write_time(command_handler.argv[CommandHandler::FIRST_ARG])) + '\n';
+	command_handler.output.out = std::format("{}", fs::last_write_time(command_handler.argv[FIRST_ARG])) + '\n';
 }
 
 static void open() {
-	if (!fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
+	if (!fs::exists(command_handler.argv[FIRST_ARG])) {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
 
@@ -348,31 +330,31 @@ static void open() {
 
 static void mkdir() {
 	if (find_arg(command_handler.argv, "-o") != -1) {
-		if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-			fs::remove_all(command_handler.argv[CommandHandler::FIRST_ARG]);
+		if (fs::exists(command_handler.argv[FIRST_ARG])) {
+			fs::remove_all(command_handler.argv[FIRST_ARG]);
 		}
 	}
-	fs::create_directory(command_handler.argv[CommandHandler::FIRST_ARG]);
+	fs::create_directory(command_handler.argv[FIRST_ARG]);
 
 	if (find_arg(command_handler.argv, "-m") != -1) {
-		fs::current_path(command_handler.argv[CommandHandler::FIRST_ARG]);
+		fs::current_path(command_handler.argv[FIRST_ARG]);
 	}
 }
 
 static void rm() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		if (!fs::equivalent(fs::current_path(), command_handler.argv[CommandHandler::FIRST_ARG])) {
+	if (fs::exists(command_handler.argv[FIRST_ARG])) {
+		if (!fs::equivalent(fs::current_path(), command_handler.argv[FIRST_ARG])) {
 			if (find_arg(command_handler.argv, "-r") != -1) {
-				fs::remove_all(command_handler.argv[CommandHandler::FIRST_ARG]);
+				fs::remove_all(command_handler.argv[FIRST_ARG]);
 			} else {
-				if (fs::is_directory(command_handler.argv[CommandHandler::FIRST_ARG])) {
-					if (fs::is_empty(command_handler.argv[CommandHandler::FIRST_ARG])) {
-						fs::remove(command_handler.argv[CommandHandler::FIRST_ARG]);
+				if (fs::is_directory(command_handler.argv[FIRST_ARG])) {
+					if (fs::is_empty(command_handler.argv[FIRST_ARG])) {
+						fs::remove(command_handler.argv[FIRST_ARG]);
 					} else {
 						error<std::invalid_argument>("Directory is not empty.", "Either add the -r modifer to force remove that directory or empty the directory.");
 					}
 				} else {
-					fs::remove(command_handler.argv[CommandHandler::FIRST_ARG]);
+					fs::remove(command_handler.argv[FIRST_ARG]);
 				}
 			}
 		} else {
@@ -384,8 +366,8 @@ static void rm() {
 }
 
 static void copy() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		fs::copy(command_handler.argv[CommandHandler::FIRST_ARG], command_handler.get_arg(1));
+	if (fs::exists(command_handler.argv[FIRST_ARG])) {
+		fs::copy(command_handler.argv[FIRST_ARG], command_handler.argv[ARG(1)]);
 	} else {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
@@ -399,9 +381,9 @@ static void echo() {
 		} else {
 			out.open(command_handler.argv[i+1], std::ios::app);
 		}
-		out << command_handler.argv[CommandHandler::FIRST_ARG];
+		out << command_handler.argv[FIRST_ARG];
 	} else {
-		command_handler.output.out += command_handler.argv[CommandHandler::FIRST_ARG] + '\n';
+		command_handler.output.out += command_handler.argv[FIRST_ARG] + '\n';
 	}
 }
 
@@ -410,8 +392,8 @@ static void pwd() {
 }
 
 static void cat() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		std::ifstream in(command_handler.argv[CommandHandler::FIRST_ARG]);
+	if (fs::exists(command_handler.argv[FIRST_ARG])) {
+		std::ifstream in(command_handler.argv[FIRST_ARG]);
 		std::string str;
 		while (std::getline(in, str)) {
 			command_handler.output.out += str + '\n';

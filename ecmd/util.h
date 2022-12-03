@@ -38,8 +38,8 @@ static void error(const std::string &str, const std::string &suggestion = "") {
 	throw std::runtime_error(message);
 }
 
-template <typename T,
-	typename = std::enable_if_t<std::is_base_of_v<std::exception, T>>>
+template <typename T//,
+>//	typename = std::enable_if_t<std::is_base_of_v<std::exception, T>>>
 static void error(const std::string &str, const std::string &suggestion = "") {
 	std::string message;
 	message += "ERROR: " + str + '\n';
@@ -98,36 +98,36 @@ static std::string wstring_to_string(const std::wstring &wstr) {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 static std::string file_type_to_string(const fs::file_type &type) {
 	switch (type) {
-		case fs::file_type::none:
-			return "none";
-			break;
-		case fs::file_type::not_found:
-			return "not_found";
-			break;
-		case fs::file_type::regular:
-			return "regular";
-			break;
-		case fs::file_type::directory:
-			return "directory";
-			break;
-		case fs::file_type::symlink:
-			return "symlink";
-			break;
-		case fs::file_type::block:
-			return "block";
-			break;
-		case fs::file_type::character:
-			return "character";
-			break;
-		case fs::file_type::fifo:
-			return "fifo";
-			break;
-		case fs::file_type::socket:
-			return "socket";
-			break;
-		default:
-			return "unknown";
-			break;
+	case fs::file_type::none:
+		return "none";
+		break;
+	case fs::file_type::not_found:
+		return "not_found";
+		break;
+	case fs::file_type::regular:
+		return "regular";
+		break;
+	case fs::file_type::directory:
+		return "directory";
+		break;
+	case fs::file_type::symlink:
+		return "symlink";
+		break;
+	case fs::file_type::block:
+		return "block";
+		break;
+	case fs::file_type::character:
+		return "character";
+		break;
+	case fs::file_type::fifo:
+		return "fifo";
+		break;
+	case fs::file_type::socket:
+		return "socket";
+		break;
+	default:
+		return "unknown";
+		break;
 	}
 }
 
@@ -162,7 +162,7 @@ static std::string words_to_string(const std::vector<std::string> &words) noexce
 	std::string ret;
 	std::for_each(words.begin(), words.end(), [&](const std::string &str) {
 		ret += str;
-	});
+		});
 
 	return ret;
 }

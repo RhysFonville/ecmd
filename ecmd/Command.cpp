@@ -1,6 +1,7 @@
 #include "Command.h"
 
-CommandHandler::CommandHandler(const std::vector<Command> &commands) : commands(commands), argc(0), argv(std::vector<std::string>()) { }
+CommandHandler::CommandHandler(const std::vector<Command> &commands) : commands(commands),
+	argc(0), argv(std::vector<std::string>()) { }
 
 void CommandHandler::sort_arguments() {
 	// I have no idea how to do this
@@ -38,7 +39,7 @@ void CommandHandler::process_command(bool clear_args) {
 				}
 				if (first_optional_arg_index == number_of_mandatory_args) {
 					try {
-						command.function();
+						command.callback();
 						std::cout << output;
 						output.out.clear();
 					} catch (std::exception &e) {
@@ -61,20 +62,55 @@ void CommandHandler::process_command(bool clear_args) {
 	}
 }
 
+void CommandHandler::help_prompt(const Command &command) {
+	output.out += command.help_message + "\n\n";
+
+	output.out += to_upper(command.name);
+
+	for (Argument argument : command.arguments) {
+		output.out += (argument.mandatory ? " {" : " [");
+		output.out += argument.name;
+		output.out += (argument.mandatory ? "}" : "]");
+
+		if (argument.repeating) {
+			output.out += "...";
+		}
+	}
+	output.out += "\n\n";
+	for (Argument argument : command.arguments) {
+		output.out += argument.name + ": " + argument.description + '\n';
+	}
+
+	output.out += '\n';
+}
+
 void CommandHandler::error_from_string(const std::string &str) {
 	std::vector<std::string> message = split(str, "====SUGGESTIONS====");
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	SetConsoleTextAttribute(console, ERROR_TEXT_COLOR);
+#endif
 
 	std::cerr << message[0];
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	SetConsoleTextAttribute(console, ERROR_SUGGESTION_TEXT_COLOR);
+#endif
 
 	for (int i = 1; i < message.size(); i++) {
 		std::cerr << message[i];
 	}
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 	SetConsoleTextAttribute(console, DEFAULT_TEXT_COLOR);
+#endif
 
 	std::cout << std::endl;
 }
+
+ArgumentHandler::ArgumentHandler(const std::vector<Argument> &arguments)
+	: arguments(arguments), argc(0), argv(std::vector<std::string>()) { }
+
+Argument::Argument(bool mandatory, std::string name,
+	std::string description, bool repeating) : mandatory(mandatory), name(name),
+	description(description), repeating(repeating) {  }
