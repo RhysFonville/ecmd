@@ -1,14 +1,14 @@
 #include "Command.h"
 
-CommandHandler::CommandHandler(const std::vector<Command> &commands) : commands(commands),
-	argc(0), argv(std::vector<std::string>()) { }
+NCommand::CommandHandler::CommandHandler(const std::vector<NCommand::Command> &commands)
+	: commands(commands), argc(0), argv(std::vector<std::string>({ })) { }
 
-void CommandHandler::sort_arguments() {
+void NCommand::CommandHandler::sort_arguments() {
 	// I have no idea how to do this
 }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-void CommandHandler::string_to_args(const std::string &input) {
+void NCommand::CommandHandler::string_to_args(const std::string &input) {
 	LPWSTR *args = CommandLineToArgvW(string_to_wstring(input).c_str(), &argc);
 
 	argc++;
@@ -19,18 +19,24 @@ void CommandHandler::string_to_args(const std::string &input) {
 }
 #endif
 
-void CommandHandler::process_command(bool clear_args) {
+void NCommand::CommandHandler::process_command(bool clear_args) {
 	if (argv.size() > 1) {
+		for (size_t i = 0; i < argv.size(); i++) {
+			if (argv[i].find('>') != -1) {
+				output.open_file(argv[i+1]);
+			}
+		}
+
 		bool found_command = false;
 		for (Command command : commands) {
-			if (command.name == argv[1]) {
+			if (command.name == argv[FIRST_ARG-1]) {
 				found_command = true;
 
 				size_t number_of_mandatory_args = 0;
-				for (const Argument &arg : command.arguments) {
-					if (arg.mandatory) number_of_mandatory_args++;
+				for (const std::shared_ptr<Argument> &arg : command.arguments) {
+					if (arg->type == Argument::Type::Argument) number_of_mandatory_args++;
 				}
-				size_t first_optional_arg_index = 0;
+				size_t first_optional_arg_index = number_of_mandatory_args;
 				for (std::vector<std::string>::iterator it = argv.begin(); it == argv.end(); it++) {
 					if ((*it)[0] == '-') {
 						first_optional_arg_index = std::distance(argv.begin(), it);
@@ -40,11 +46,12 @@ void CommandHandler::process_command(bool clear_args) {
 				if (first_optional_arg_index == number_of_mandatory_args) {
 					try {
 						command.callback();
-						std::cout << output;
+						output.print();
+						output.close_file();
 						output.out.clear();
 					} catch (std::exception &e) {
-						error_from_string(e.what());
-						std::cerr << "Command aborted.\n\n";
+						print_error(e.what(), output);
+						output.print("Command aborted.\n\n");
 					}
 				} else {
 					error<std::invalid_argument>("A mandatory argument was not specified.", "Mandatory arguments to not need a dashed dashed modifier (ex: -x) and need to be specified at the beginning of the arguments.");
@@ -53,7 +60,7 @@ void CommandHandler::process_command(bool clear_args) {
 			}
 		}
 		if (!found_command)
-			error_from_string("Command does not exist.");
+			print_error("Command does not exist.", output);
 	}
 
 	if (clear_args) {
@@ -62,55 +69,81 @@ void CommandHandler::process_command(bool clear_args) {
 	}
 }
 
-void CommandHandler::help_prompt(const Command &command) {
+void NCommand::CommandHandler::help_prompt(const NCommand::Command &command) {
 	output.out += command.help_message + "\n\n";
 
 	output.out += to_upper(command.name);
 
-	for (Argument argument : command.arguments) {
-		output.out += (argument.mandatory ? " {" : " [");
-		output.out += argument.name;
-		output.out += (argument.mandatory ? "}" : "]");
-
-		if (argument.repeating) {
-			output.out += "...";
-		}
+	for (const std::shared_ptr<Argument> &argument : command.arguments) {
+		output.out += (argument->type == Argument::Type::Argument ? " {" : " [");
+		output.out += argument->name;
+		output.out += (argument->type == Argument::Type::Argument ? "}" : "]");
 	}
 	output.out += "\n\n";
-	for (Argument argument : command.arguments) {
-		output.out += argument.name + ": " + argument.description + '\n';
+	for (const std::shared_ptr<Argument> &argument : command.arguments) {
+		output.out += argument->name + ": " + argument->description + '\n';
 	}
 
 	output.out += '\n';
 }
 
-void CommandHandler::error_from_string(const std::string &str) {
-	std::vector<std::string> message = split(str, "====SUGGESTIONS====");
+NCommand::Argument::Argument(std::string name, std::string description, Type type)
+	: name(name), description(description), type(type) { }
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	SetConsoleTextAttribute(console, ERROR_TEXT_COLOR);
-#endif
+NCommand::OptionalArgument::OptionalArgument(std::string name,
+	std::string description, Type type)
+	: Argument(OPTIONAL_ARG_NAME(name), description, type) { }
 
-	std::cerr << message[0];
+NCommand::ExpansiveOptionalArgument::ExpansiveOptionalArgument(std::string name,
+	std::string expansion_name, std::string description, Type type)
+	: OptionalArgument(name, description, type),
+	expansion_name(expansion_name) { }
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	SetConsoleTextAttribute(console, ERROR_SUGGESTION_TEXT_COLOR);
-#endif
+NArgument::Argument::Argument(std::string name, std::string description,
+	std::function<void()> callback, Type type) : NCommand::Argument(name, description, type),
+	callback(callback) { }
 
-	for (int i = 1; i < message.size(); i++) {
-		std::cerr << message[i];
-	}
+NArgument::OptionalArgument::OptionalArgument(std::string name,
+	std::string description, std::function<void()> callback, Type type)
+	: NCommand::OptionalArgument(name, description, type),
+	callback(callback) {}
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	SetConsoleTextAttribute(console, DEFAULT_TEXT_COLOR);
-#endif
+NArgument::ExpansiveOptionalArgument::ExpansiveOptionalArgument(std::string name,
+	std::string expansion_name, std::string description, std::function<void()> callback,
+	Type type)
+	: NCommand::ExpansiveOptionalArgument(name, expansion_name, description, type),
+	callback(callback) { }
 
-	std::cout << std::endl;
-}
-
-ArgumentHandler::ArgumentHandler(const std::vector<Argument> &arguments)
+NArgument::ArgumentHandler::ArgumentHandler(const std::vector<std::shared_ptr<Argument>> &arguments)
 	: arguments(arguments), argc(0), argv(std::vector<std::string>()) { }
 
-Argument::Argument(bool mandatory, std::string name,
-	std::string description, bool repeating) : mandatory(mandatory), name(name),
-	description(description), repeating(repeating) {  }
+void NArgument::ArgumentHandler::process_arguments() {
+	for (size_t i = 0; i < argv.size(); i++) {
+		if (argv[i].find('>') != -1) {
+			output.open_file(argv[i+1]);
+		}
+	}
+
+	for (const std::string &argv : argv) {
+		for (const std::shared_ptr<Argument> &arg : arguments) {
+			if (arg->name == argv) {
+				try {
+					arg->callback();
+					output.print();
+					output.close_file();
+					output.out.clear();
+				} catch (std::exception &e) {
+					print_error(e.what());
+					output.print("Command aborted.\n\n");
+				}
+				break;
+			}
+		}
+	}
+}
+
+void NArgument::ArgumentHandler::help_prompt(const NCommand::Argument &argument) {
+	output.out += argument.name +
+		(argument.type == Argument::Type::ExpansiveOptionalArgument ? argument.name : "") +
+		"\n\n" + argument.description + '\n';
+}

@@ -38,8 +38,7 @@ static void error(const std::string &str, const std::string &suggestion = "") {
 	throw std::runtime_error(message);
 }
 
-template <typename T//,
->//	typename = std::enable_if_t<std::is_base_of_v<std::exception, T>>>
+template <typename T, typename = std::enable_if_t<std::is_base_of_v<std::exception, T>>>
 static void error(const std::string &str, const std::string &suggestion = "") {
 	std::string message;
 	message += "ERROR: " + str + '\n';

@@ -22,165 +22,133 @@ static void echo();
 static void pwd();
 static void cat();
 
-CommandHandler command_handler(std::vector<Command>({
-	Command(
+NCommand::CommandHandler command_handler(std::vector<NCommand::Command>({
+	NCommand::Command(
 		"man",
-		std::vector<Argument>({
-			Argument({ false, "-c command", "Command to show the manual on." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("c", "command", "Command to show the manual on."))
 		}),
 		"Prints a command's manual or gives a brief description about all command_handler.commands.",
-		std::function<void()>([]() {
-			man();
-		})
+		man
 	),
-	Command(
+	NCommand::Command(
 		"colortest",
-		std::vector<Argument>({
-			Argument({ false, "-s string", "String to test the colors with." }),
-			Argument({ false, "-c colors", "Colors to test.", true })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("s", "string", "String to test the colors with.")),
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("c", "color", "Color to test."))
 		}),
 		"Tests the console text colors.",
-		std::function<void()>([]() {
-			colortest();
-		})
+		colortest
 	),
-	Command(
+	NCommand::Command(
 		"cd",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path to switch the current directory to." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "Path to switch the current directory to."))
 		}),
 		"Changes the current directory.",
-		std::function<void()>([]() {
-			cd();
-		})
+		cd
 	),
-	Command(
+	NCommand::Command(
 		"exit",
-		std::vector<Argument>({
-			Argument({ false, "-ms seconds", "How long to wait before exiting in milliseconds." }),
-			Argument({ false, "-s seconds", "How long to wait before exiting in seconds." }),
-			Argument({ false, "-m seconds", "How long to wait before exiting in minutes." }),
-			Argument({ false, "-h seconds", "How long to wait before exiting in hours." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("ms", "seconds", "How long to wait before exiting in milliseconds.")),
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("s", "seconds", "How long to wait before exiting in seconds.")),
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("m", "seconds", "How long to wait before exiting in minutes.")),
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("h", "seconds", "How long to wait before exiting in hours."))
 		}),
 		"Exits the program.",
-		std::function<void()>([]() {
-			exit();
-		})
+		std::function<void()>([]() { exit(); }) // Compiler didn't like the normal way here for some reason
 	),
-	Command(
+	NCommand::Command(
 		"ls",
-		std::vector<Argument>({
-			Argument({ false, "-p path", "Path to search." }),
-			Argument({ false, "-l", "More detailed list." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, ExpansiveOptionalArgument("p", "path", "Path to search.")),
+			MAKE_ARG(NCommand, OptionalArgument("l", "More detailed list."))
 		}),
 		"Lists the files or subdirectories in a directory.",
-		std::function<void()>([]() {
-			ls();
-		})
+		ls
 	),
-	Command(
+	NCommand::Command(
 		"exists",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path to use." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "Path to use."))
 		}),
 		"Prints \"true\" if specified file exists, prints \"false\" if it doesn't.",
-		std::function<void()>([]() {
-			exists();
-		})
+		exists
 	),
-	Command(
+	NCommand::Command(
 		"touch",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path to use." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "Path to use."))
 		}),
 		"Changes file timestamps.",
-		std::function<void()>([]() {
-			touch();
-		})
+		touch
 	),
-	Command(
+	NCommand::Command(
 		"date",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path to use." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "Path to use."))
 		}),
 		"Shows the date of the last modification.",
-		std::function<void()>([]() {
-			date();
-		})
+		date
 	),
-	Command(
+	NCommand::Command(
 		"open",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path to use." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "Path to use."))
 		}),
 		"Opens/runs the specified file.",
-		std::function<void()>([]() {
-			open();
-		})
+		open
 	),
-	Command(
+	NCommand::Command(
 		"mkdir",
-		std::vector<Argument>({
-			Argument({ true, "path", "Path/directory to add." }),
-			Argument({ false, "-m", "Move the working directory to the newly added directory." }),
-			Argument({ false, "-o", "If a directory with that name already exists, override it." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "directory to add.")),
+			MAKE_ARG(NCommand, OptionalArgument("m", "Move the working directory to the newly added directory.")),
+			MAKE_ARG(NCommand, OptionalArgument("o", "If a directory with that name already exists, override it."))
 		}),
 		"Adds a directory.",
-		std::function<void()>([]() {
-			mkdir();
-		})
+		mkdir
 	),
-	Command(
+	NCommand::Command(
 		"rm",
-		std::vector<Argument>({
-			Argument({ true, "path", "File/Directory to remove." }),
-			Argument({ false, "-r", "Force remove." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("path", "File/Directory to remove.")),
+			MAKE_ARG(NCommand, OptionalArgument("r", "Force remove."))
 		}),
 		"Removes a file/directory.",
-		std::function<void()>([]() {
-			rm();
-		})
+		rm
 	),
-	Command(
+	NCommand::Command(
 		"copy",
-		std::vector<Argument>({
-			Argument({ true, "source_path", "Path of the source." }),
-			Argument({ true, "destination_path", "Path of the destination." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("source_path", "Path of the source.")),
+			MAKE_ARG(NCommand, Argument("destination_path", "Path of the destination."))
 		}),
 		"Copies a file/directory to a specified location.",
-		std::function<void()>([]() {
-			copy();
-		})
+		copy
 	),
-	Command(
+	NCommand::Command(
 		"echo",
-		std::vector<Argument>({
-			Argument({ false, "string", "String to echo" }),
-			Argument({ true, "-o output_file", "File to echo string to." }),
-			Argument({ true, "-t", "Truncate file." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("string", "String to echo")),
 		}),
-		"Copies a file/directory to a specified location.",
-		std::function<void()>([]() {
-			echo();
-		})
+		"Echos string to output destination.",
+		echo
 	),
-	Command(
+	NCommand::Command(
 		"pwd",
-		std::vector<Argument>({ }),
+		std::vector<std::shared_ptr<NCommand::Argument>>({ }),
 		"Prints the working directory.",
-		std::function<void()>([]() {
-			pwd();
-		})
+		pwd
 	),
-	Command(
+	NCommand::Command(
 		"cat",
-		std::vector<Argument>({
-			Argument({ true, "file", "File to catenate." })
+		std::vector<std::shared_ptr<NCommand::Argument>>({
+			MAKE_ARG(NCommand, Argument("file", "File to catenate."))
 		}),
 		"Catenates the specified file. Prints its contents.",
-		std::function<void()>([]() {
-			cat();
-		})
+		cat
 	)
 }));
 
@@ -189,59 +157,38 @@ static void man() {
 
 	size_t arg = find_arg(command_handler.argv, "-c");
 	if (arg == -1) {
-		for (Command command : command_handler.commands) {
+		for (NCommand::Command command : command_handler.commands) {
 			command_handler.output.out += command.name + ": " + command.help_message + '\n';
 		}
 		command_handler.output.out += '\n';
 	} else {
-		for (Command command : command_handler.commands) {
+		for (NCommand::Command command : command_handler.commands) {
 			if (command.name == command_handler.argv[arg+1]) {
-				command_handler.output.out += command.help_message + "\n\n";
-
-				command_handler.output.out += to_upper(command.name);
-
-				for (Argument argument : command.arguments) {
-					command_handler.output.out += (argument.mandatory ? " {" : " [");
-					command_handler.output.out += argument.name;
-					command_handler.output.out += (argument.mandatory ? "}" : "]");
-
-					if (argument.repeating) {
-						command_handler.output.out += "...";
-					}
-				}
-				command_handler.output.out += "\n\n";
-				for (Argument argument : command.arguments) {
-					command_handler.output.out += argument.name + ": " + argument.description + '\n';
-				}
-
-				command_handler.output.out += '\n';
-
+				command_handler.help_prompt(command);
 				return;
 			}
 		}
-		error<std::invalid_argument>("Command does not exist.");
+		error<std::invalid_argument>("Command::Command does not exist.");
 	}
 }
 
 static void colortest() {
-	if (find_arg(command_handler.argv, "-c") == -1) {
+	if (size_t i = find_arg(command_handler.argv, "-c"); i == -1) {
 		for (int i = 0; i < 256; i++) {
 			SetConsoleTextAttribute(console, i);
-			std::cout << std::to_string(i) << ' ' << (find_arg(command_handler.argv, "-s") == -1 ? "Hello World!" : command_handler.argv[find_arg(command_handler.argv, "-s") + 1]) << std::endl;
+			command_handler.output.print(std::to_string(i) + ' ' + (find_arg(command_handler.argv, "-s") == -1 ? "Hello World!" : command_handler.argv[find_arg(command_handler.argv, "-s") + 1]) + '\n');
 		}
 	} else {
-		for (std::string color : std::vector<std::string>(command_handler.argv.begin() + 5, command_handler.argv.end())) {
-			SetConsoleTextAttribute(console, std::stoi(color));
-			std::cout << color << ' ' << (find_arg(command_handler.argv, "-s") == -1 ? "Hello World!" : command_handler.argv[find_arg(command_handler.argv, "-s") + 1]) << std::endl;
-		}
+		SetConsoleTextAttribute(console, std::stoi(command_handler.argv[i+1]));
+		command_handler.output.print(command_handler.argv[i+1] + ' ' + (find_arg(command_handler.argv, "-s") == -1 ? "Hello World!" : command_handler.argv[find_arg(command_handler.argv, "-s") + 1]) + '\n');
 	}
 	SetConsoleTextAttribute(console, DEFAULT_TEXT_COLOR);
 	command_handler.output.out += '\n';
 }
 
 static void cd() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		fs::current_path(command_handler.argv[CommandHandler::FIRST_ARG]);
+	if (fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+		fs::current_path(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 	} else {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
@@ -253,11 +200,11 @@ static void exit() {
 	int minutes			= find_arg(command_handler.argv, "-m")	 != -1	? std::stoi(command_handler.argv[find_arg(command_handler.argv, "-m")+1])	 : 0;
 	int hours			= find_arg(command_handler.argv, "-h")	 != -1	? std::stoi(command_handler.argv[find_arg(command_handler.argv, "-h")+1])	 : 0;
 
-	std::cout << "Exiting in:\n\t"
+	command_handler.output.print("Exiting in:\n\t"
 		+ std::to_string(hours)			+ " hours\n\t"
 		+ std::to_string(minutes)		+ " minutes\n\t"
 		+ std::to_string(seconds)		+ " seconds\n\t"
-		+ std::to_string(milliseconds)	+ " milliseconds";
+		+ std::to_string(milliseconds)	+ " milliseconds");
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
 	std::this_thread::sleep_for(std::chrono::seconds(seconds));
@@ -296,11 +243,11 @@ static void ls() {
 }
 
 static void exists() {
-	command_handler.output.out += std::string(fs::exists(command_handler.argv[CommandHandler::FIRST_ARG]) ? "true" : "false") + '\n';
+	command_handler.output.out += std::string(fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]) ? "true" : "false") + '\n';
 }
 
 static void touch() {
-	std::ofstream file(command_handler.argv[CommandHandler::FIRST_ARG]);
+	std::ofstream file(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 	if (file.is_open()) {
 		file << "";
 		file.close();
@@ -310,11 +257,11 @@ static void touch() {
 }
 
 static void date() {
-	command_handler.output.out = std::format("{}", fs::last_write_time(command_handler.argv[CommandHandler::FIRST_ARG])) + '\n';
+	command_handler.output.out = std::format("{}", fs::last_write_time(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) + '\n';
 }
 
 static void open() {
-	if (!fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
+	if (!fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
 
@@ -328,7 +275,7 @@ static void open() {
 
 	// start the program up
 	CreateProcessA(command_handler.argv[2].c_str(),   // the path
-		&words_to_string(command_handler.argv)[0],		    // Command line
+		&words_to_string(command_handler.argv)[0],		    // Command::Command line
 		NULL,           // Process handle not inheritable
 		NULL,           // Thread handle not inheritable
 		FALSE,          // Set handle inheritance to FALSE
@@ -348,31 +295,31 @@ static void open() {
 
 static void mkdir() {
 	if (find_arg(command_handler.argv, "-o") != -1) {
-		if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-			fs::remove_all(command_handler.argv[CommandHandler::FIRST_ARG]);
+		if (fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+			fs::remove_all(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 		}
 	}
-	fs::create_directory(command_handler.argv[CommandHandler::FIRST_ARG]);
+	fs::create_directory(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 
 	if (find_arg(command_handler.argv, "-m") != -1) {
-		fs::current_path(command_handler.argv[CommandHandler::FIRST_ARG]);
+		fs::current_path(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 	}
 }
 
 static void rm() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		if (!fs::equivalent(fs::current_path(), command_handler.argv[CommandHandler::FIRST_ARG])) {
+	if (fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+		if (!fs::equivalent(fs::current_path(), command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
 			if (find_arg(command_handler.argv, "-r") != -1) {
-				fs::remove_all(command_handler.argv[CommandHandler::FIRST_ARG]);
+				fs::remove_all(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 			} else {
-				if (fs::is_directory(command_handler.argv[CommandHandler::FIRST_ARG])) {
-					if (fs::is_empty(command_handler.argv[CommandHandler::FIRST_ARG])) {
-						fs::remove(command_handler.argv[CommandHandler::FIRST_ARG]);
+				if (fs::is_directory(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+					if (fs::is_empty(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+						fs::remove(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 					} else {
 						error<std::invalid_argument>("Directory is not empty.", "Either add the -r modifer to force remove that directory or empty the directory.");
 					}
 				} else {
-					fs::remove(command_handler.argv[CommandHandler::FIRST_ARG]);
+					fs::remove(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 				}
 			}
 		} else {
@@ -384,25 +331,15 @@ static void rm() {
 }
 
 static void copy() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		fs::copy(command_handler.argv[CommandHandler::FIRST_ARG], command_handler.get_arg(1));
+	if (fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+		fs::copy(command_handler.argv[NCommand::CommandHandler::FIRST_ARG], command_handler.get_arg(1));
 	} else {
 		error<std::invalid_argument>(PATH_DOES_NOT_EXIST);
 	}
 }
 
 static void echo() {
-	if (int i = find_arg(command_handler.argv, "-o"); i != -1) {
-		std::ofstream out;
-		if (find_arg(command_handler.argv, "-t") != -1) {
-			out.open(command_handler.argv[i+1], std::ios::trunc);
-		} else {
-			out.open(command_handler.argv[i+1], std::ios::app);
-		}
-		out << command_handler.argv[CommandHandler::FIRST_ARG];
-	} else {
-		command_handler.output.out += command_handler.argv[CommandHandler::FIRST_ARG] + '\n';
-	}
+	command_handler.output.out += command_handler.argv[NCommand::CommandHandler::FIRST_ARG] + '\n';
 }
 
 static void pwd() {
@@ -410,8 +347,8 @@ static void pwd() {
 }
 
 static void cat() {
-	if (fs::exists(command_handler.argv[CommandHandler::FIRST_ARG])) {
-		std::ifstream in(command_handler.argv[CommandHandler::FIRST_ARG]);
+	if (fs::exists(command_handler.argv[NCommand::CommandHandler::FIRST_ARG])) {
+		std::ifstream in(command_handler.argv[NCommand::CommandHandler::FIRST_ARG]);
 		std::string str;
 		while (std::getline(in, str)) {
 			command_handler.output.out += str + '\n';

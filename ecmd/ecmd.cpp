@@ -15,14 +15,14 @@ int main(int argc, char *argv[]) {
 	fs::current_path(user_folder_path);
 
 	if (!GetComputerNameW(computer_name, &info_buffer_size)) {
-		CommandHandler::error_from_string("Failed to get the computer's name.\n");
+		print_error("Failed to get the computer's name.\n");
 		return 1;
 	}
 
 	info_buffer_size = INFO_BUFFER_SIZE;
 
 	if (!GetUserNameW(user_name, &info_buffer_size)) {
-		CommandHandler::error_from_string("Failed to get the user's name.\n");
+		print_error("Failed to get the user's name.\n");
 		return 1;
 	}
 
