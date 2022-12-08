@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 		SetConsoleTextAttribute(console, DEFAULT_TEXT_COLOR);
 		std::getline(std::cin, in);
 
-		command_handler.string_to_args(in);
+		command_handler.set_argument_variables(in);
 		command_handler.process_command();
 	}
 

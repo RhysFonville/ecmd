@@ -17,7 +17,8 @@
 */
 
 #define MAKE_ARG(NAMESPACE, ARG) std::make_shared<NAMESPACE::Argument>(NAMESPACE::ARG)
-#define OPTIONAL_ARG_NAME(NAME) '-'+NAME
+#define OPTIONAL_ARG_NAME(NAME) (NAME[0] == '-' ? NAME : '-'+NAME)
+#define FIRST_ARG 1
 
 class Output {
 public:
@@ -71,39 +72,36 @@ inline std::ostream & operator<<(std::ostream &os, const Output &output) {
 	return os;
 }
 
+enum class ArgumentType {
+	Argument,
+	OptionalArgument,
+	ExpansiveOptionalArgument,
+};
+
 namespace NCommand {
 class Argument {
 public:
-	enum class Type {
-		Argument,
-		OptionalArgument,
-		ExpansiveOptionalArgument
-	};
-
-	Argument(std::string name, std::string description, Type type = Type::Argument);
+	Argument(std::string name, std::string description,
+		ArgumentType _type = ArgumentType::Argument);
 
 	std::string name = "";
 	std::string description = "";
 
-	Type type = Type::Argument;
+	ArgumentType type;
 };
 
 class OptionalArgument : public Argument {
 public:
 	OptionalArgument(std::string name, std::string description,
-		Type type = Type::OptionalArgument);
-
-	Type type = Type::OptionalArgument;
+		ArgumentType _type = ArgumentType::OptionalArgument);
 };
 
 class ExpansiveOptionalArgument : public OptionalArgument {
 public:
 	ExpansiveOptionalArgument(std::string name, std::string expansion_name,
-		std::string description, Type type = Type::ExpansiveOptionalArgument);
+		std::string description, ArgumentType _type = ArgumentType::ExpansiveOptionalArgument);
 	
 	std::string expansion_name;
-
-	Type type = Type::ExpansiveOptionalArgument;
 };
 
 class Command {
@@ -124,8 +122,10 @@ public:
 	CommandHandler(const std::vector<Command> &commands);
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-	void string_to_args(const std::string &input);
+	void set_argument_variables(const std::string &input);
 #endif
+	
+	void set_argument_variables(int argc, char *argv[]);
 
 	void process_command(bool clear_args = true);
 
@@ -138,65 +138,65 @@ public:
 	int argc;
 	std::vector<std::string> argv = { };
 	Output output;
-
-	static constexpr size_t FIRST_ARG = 2;
 private:
 	void sort_arguments();
 };
 }
 
 namespace NArgument {
+
+using ArgvLocation = const std::vector<std::string>::iterator&;
+using Callback = std::function<void(ArgvLocation)>;
+
 class Argument : public NCommand::Argument {
 public:
-	Argument(std::string name, std::string description, std::function<void()> callback,
-		Type type = Type::Argument);
+	Argument(std::string name, std::string description, Callback callback,
+		ArgumentType _type = ArgumentType::Argument);
 
-	std::function<void()> callback;
-
-	Type type = Type::Argument;
+	Callback callback;
 };
 class OptionalArgument : public NCommand::OptionalArgument {
 public:
 	OptionalArgument(std::string name, std::string description,
-		std::function<void()> callback, Type type = Type::OptionalArgument);
+		Callback callback, ArgumentType _type = ArgumentType::OptionalArgument);
 
 	operator NArgument::Argument() {
-		return NArgument::Argument(name, description, callback);
+		return NArgument::Argument(name, description, callback,  ArgumentType::OptionalArgument);
 	}
 
-	std::function<void()> callback;
-
-	Type type = Type::OptionalArgument;
+	Callback callback;
 };
 class ExpansiveOptionalArgument : public NCommand::ExpansiveOptionalArgument {
 public:
 	ExpansiveOptionalArgument(std::string name, std::string expansion_name,
-		std::string description, std::function<void()> callback,
-		Type type = Type::ExpansiveOptionalArgument);
+		std::string description, Callback callback,
+		ArgumentType _type = ArgumentType::ExpansiveOptionalArgument);
 
 	operator NArgument::OptionalArgument() {
-		return NArgument::OptionalArgument(name, description, callback);
+		return NArgument::OptionalArgument(name, description, callback, ArgumentType::ExpansiveOptionalArgument);
 	}
 
-	std::function<void()> callback;
-
-	Type type = Type::ExpansiveOptionalArgument;
+	Callback callback;
 };
 
 class ArgumentHandler {
 public:
-	ArgumentHandler(const std::vector<std::shared_ptr<Argument>> &arguments);
+	ArgumentHandler(const std::function<void()> &base_callback,
+		const std::vector<std::shared_ptr<Argument>> &arguments);
+
+	void set_argument_variables(int argc, char *argv[]);
 
 	void process_arguments();
+
 	void help_prompt(const NCommand::Argument &argument);
+
+	std::function<void()> base_callback;
 
 	std::vector<std::shared_ptr<Argument>> arguments;
 
 	int argc = 0;
 	std::vector<std::string> argv = { };
 	Output output;
-
-	static constexpr size_t FIRST_ARG = 1;
 };
 }
 

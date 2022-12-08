@@ -8,16 +8,19 @@ void NCommand::CommandHandler::sort_arguments() {
 }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-void NCommand::CommandHandler::string_to_args(const std::string &input) {
+void NCommand::CommandHandler::set_argument_variables(const std::string &input) {
 	LPWSTR *args = CommandLineToArgvW(string_to_wstring(input).c_str(), &argc);
 
-	argc++;
-	argv.push_back(std::filesystem::current_path().string());
-	for (int i = 0; i < argc-1; i++) {
+	for (int i = 0; i < argc; i++) {
 		argv.push_back(wstring_to_string(args[i]));
 	}
 }
 #endif
+
+void NCommand::CommandHandler::set_argument_variables(int argc, char *argv[]) {
+	this->argc = argc;
+	this->argv = std::vector<std::string>(argv, argv+argc);
+}
 
 void NCommand::CommandHandler::process_command(bool clear_args) {
 	if (argv.size() > 1) {
@@ -34,7 +37,7 @@ void NCommand::CommandHandler::process_command(bool clear_args) {
 
 				size_t number_of_mandatory_args = 0;
 				for (const std::shared_ptr<Argument> &arg : command.arguments) {
-					if (arg->type == Argument::Type::Argument) number_of_mandatory_args++;
+					if (arg->type == ArgumentType::Argument) number_of_mandatory_args++;
 				}
 				size_t first_optional_arg_index = number_of_mandatory_args;
 				for (std::vector<std::string>::iterator it = argv.begin(); it == argv.end(); it++) {
@@ -75,9 +78,9 @@ void NCommand::CommandHandler::help_prompt(const NCommand::Command &command) {
 	output.out += to_upper(command.name);
 
 	for (const std::shared_ptr<Argument> &argument : command.arguments) {
-		output.out += (argument->type == Argument::Type::Argument ? " {" : " [");
+		output.out += (argument->type == ArgumentType::Argument ? " {" : " [");
 		output.out += argument->name;
-		output.out += (argument->type == Argument::Type::Argument ? "}" : "]");
+		output.out += (argument->type == ArgumentType::Argument ? "}" : "]");
 	}
 	output.out += "\n\n";
 	for (const std::shared_ptr<Argument> &argument : command.arguments) {
@@ -87,35 +90,43 @@ void NCommand::CommandHandler::help_prompt(const NCommand::Command &command) {
 	output.out += '\n';
 }
 
-NCommand::Argument::Argument(std::string name, std::string description, Type type)
-	: name(name), description(description), type(type) { }
+NCommand::Argument::Argument(std::string name, std::string description,
+	ArgumentType _type)
+	: name(name), description(description), type(_type) { }
 
 NCommand::OptionalArgument::OptionalArgument(std::string name,
-	std::string description, Type type)
-	: Argument(OPTIONAL_ARG_NAME(name), description, type) { }
+	std::string description, ArgumentType _type)
+	: NCommand::Argument(OPTIONAL_ARG_NAME(name), description, _type) { }
 
 NCommand::ExpansiveOptionalArgument::ExpansiveOptionalArgument(std::string name,
-	std::string expansion_name, std::string description, Type type)
-	: OptionalArgument(name, description, type),
+	std::string expansion_name, std::string description, ArgumentType _type)
+	: NCommand::OptionalArgument(name, description, _type),
 	expansion_name(expansion_name) { }
 
 NArgument::Argument::Argument(std::string name, std::string description,
-	std::function<void()> callback, Type type) : NCommand::Argument(name, description, type),
-	callback(callback) { }
+	Callback callback, ArgumentType _type)
+	: NCommand::Argument(name, description, _type), callback(callback) { }
 
 NArgument::OptionalArgument::OptionalArgument(std::string name,
-	std::string description, std::function<void()> callback, Type type)
-	: NCommand::OptionalArgument(name, description, type),
-	callback(callback) {}
-
-NArgument::ExpansiveOptionalArgument::ExpansiveOptionalArgument(std::string name,
-	std::string expansion_name, std::string description, std::function<void()> callback,
-	Type type)
-	: NCommand::ExpansiveOptionalArgument(name, expansion_name, description, type),
+	std::string description, Callback callback, ArgumentType _type)
+	: NCommand::OptionalArgument(name, description, _type),
 	callback(callback) { }
 
-NArgument::ArgumentHandler::ArgumentHandler(const std::vector<std::shared_ptr<Argument>> &arguments)
-	: arguments(arguments), argc(0), argv(std::vector<std::string>()) { }
+NArgument::ExpansiveOptionalArgument::ExpansiveOptionalArgument(std::string name,
+	std::string expansion_name, std::string description, Callback callback,
+	ArgumentType _type)
+	: NCommand::ExpansiveOptionalArgument(name, expansion_name, description, _type),
+	callback(callback) { }
+
+NArgument::ArgumentHandler::ArgumentHandler(const std::function<void()> &base_callback,
+	const std::vector<std::shared_ptr<Argument>> &arguments)
+	: base_callback(base_callback), arguments(arguments), argc(0),
+	argv(std::vector<std::string>()) { }
+
+void NArgument::ArgumentHandler::set_argument_variables(int argc, char *argv[]) {
+	this->argc = argc;
+	this->argv = std::vector<std::string>(argv, argv+argc);
+}
 
 void NArgument::ArgumentHandler::process_arguments() {
 	for (size_t i = 0; i < argv.size(); i++) {
@@ -124,26 +135,35 @@ void NArgument::ArgumentHandler::process_arguments() {
 		}
 	}
 
-	for (const std::string &argv : argv) {
-		for (const std::shared_ptr<Argument> &arg : arguments) {
-			if (arg->name == argv) {
-				try {
-					arg->callback();
-					output.print();
-					output.close_file();
-					output.out.clear();
-				} catch (std::exception &e) {
-					print_error(e.what());
-					output.print("Command aborted.\n\n");
+	int found_arg_location = -1;
+	for (int i = 1; i < argv.size(); i++) {
+		for (int j = found_arg_location+1; j < arguments.size(); j++) {
+			if (arguments[j]->type == ArgumentType::OptionalArgument ||
+				arguments[j]->type == ArgumentType::ExpansiveOptionalArgument) {
+				if (arguments[j]->name != argv[i]) {
+					continue;
 				}
-				break;
 			}
+			try {
+				arguments[j]->callback(argv.begin()+i);
+			} catch (std::exception &e) {
+				print_error(e.what());
+				output.print("Command aborted.\n\n");
+			}
+			found_arg_location = j;
+			break;
 		}
 	}
+
+	base_callback();
+
+	output.print();
+	output.close_file();
+	output.out.clear();
 }
 
 void NArgument::ArgumentHandler::help_prompt(const NCommand::Argument &argument) {
 	output.out += argument.name +
-		(argument.type == Argument::Type::ExpansiveOptionalArgument ? argument.name : "") +
+		(argument.type == ArgumentType::ExpansiveOptionalArgument ? argument.name : "") +
 		"\n\n" + argument.description + '\n';
 }
