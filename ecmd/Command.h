@@ -176,6 +176,10 @@ public:
 		return NArgument::OptionalArgument(name, description, callback, ArgumentType::ExpansiveOptionalArgument);
 	}
 
+	operator NArgument::Argument() {
+		return NArgument::OptionalArgument(name, description, callback, ArgumentType::ExpansiveOptionalArgument);
+	}
+
 	Callback callback;
 };
 

@@ -1,6 +1,7 @@
 .vs/
 x64/Debug/
-x64/Release/ecmd.pdb
+x64/Release/*
+!x64/Release/ecmd.lib
 ecmd/x64/
 ecmd/CommandStorage.h
 x64/**/*.exe
