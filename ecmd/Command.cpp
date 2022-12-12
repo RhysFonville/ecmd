@@ -135,9 +135,8 @@ void NArgument::ArgumentHandler::process_arguments() {
 		}
 	}
 
-	int found_arg_location = -1;
-	for (int i = 1; i < argv.size(); i++) {
-		for (int j = found_arg_location+1; j < arguments.size(); j++) {
+	for (int i = 0; i < argv.size(); i++) {
+		for (int j = 0; j < arguments.size(); j++) {
 			if (arguments[j]->type == ArgumentType::OptionalArgument ||
 				arguments[j]->type == ArgumentType::ExpansiveOptionalArgument) {
 				if (arguments[j]->name != argv[i]) {
@@ -150,7 +149,11 @@ void NArgument::ArgumentHandler::process_arguments() {
 				print_error(e.what());
 				output.print("Command aborted.\n\n");
 			}
-			found_arg_location = j;
+			
+			if (arguments[j]->type == ArgumentType::ExpansiveOptionalArgument) {
+				i++;
+			}
+
 			break;
 		}
 	}
