@@ -131,6 +131,8 @@ public:
 
 	void help_prompt(const Command &command);
 
+	void out(const std::string &str) { output.out += str; }
+
 	std::string & get_arg(size_t index) { return argv[FIRST_ARG + index]; }
 
 	std::vector<Command> commands;
@@ -193,6 +195,8 @@ public:
 	void process_arguments();
 
 	void help_prompt(const NCommand::Argument &argument);
+
+	void out(const std::string &str) { output.out += str; }
 
 	std::function<void()> base_callback;
 
