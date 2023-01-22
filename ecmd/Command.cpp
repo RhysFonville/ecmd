@@ -11,7 +11,9 @@ void NCommand::CommandHandler::sort_arguments() {
 void NCommand::CommandHandler::set_argument_variables(const std::string &input) {
 	LPWSTR *args = CommandLineToArgvW(string_to_wstring(input).c_str(), &argc);
 
-	for (int i = 0; i < argc; i++) {
+	argv.push_back(fs::current_path().string());
+	argc++;
+	for (int i = 0; i < argc-1; i++) {
 		argv.push_back(wstring_to_string(args[i]));
 	}
 }
@@ -32,7 +34,7 @@ void NCommand::CommandHandler::process_command(bool clear_args) {
 
 		bool found_command = false;
 		for (Command command : commands) {
-			if (command.name == argv[FIRST_ARG-1]) {
+			if (command.name == argv[FIRST_ARG]) {
 				found_command = true;
 
 				size_t number_of_mandatory_args = 0;

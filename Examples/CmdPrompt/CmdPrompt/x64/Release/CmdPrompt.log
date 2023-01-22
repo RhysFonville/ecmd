@@ -1,0 +1,5 @@
+﻿  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 2548 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  CmdPrompt.vcxproj -> C:\Users\Family\source\repos\ecmd\Examples\CmdPrompt\x64\Release\CmdPrompt.exe
